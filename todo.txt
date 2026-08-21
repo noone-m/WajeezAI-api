@@ -1,0 +1,22 @@
+* extract helper methods from notebooks
+
+
+* if image uploaded from pc -> beta = 0 we only care for semantic similarity
+
+* images -> text
+
+
+* upload_endpoint
+
+* process endpoint
+/lectures
+payload
+{
+    audio 
+    images : [{image:,timestamp:}]
+}
+
+get lecutres/{id} -> stored word document
+
+get lecutures -> list of lectures
+
