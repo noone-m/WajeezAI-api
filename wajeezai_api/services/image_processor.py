@@ -27,7 +27,21 @@ class ImageInput:
     image: Image.Image
     path: str
     timestamp: float | None = None 
-    
+
+@dataclass
+class Visual:
+    coord: list[int]
+    desc: str
+
+
+@dataclass
+class SlideResult:
+    slide_number: int
+    text: str
+    visuals: list[Visual]
+    image_path: str | None = None
+    timestamp: float | None = None
+
 class ImageProcessor:
 
     @staticmethod
@@ -107,7 +121,7 @@ class ImageProcessor:
             print(f"Batch inference error: {e}")
             return f"Error: {e}"
 
-    def parse_output(output : str) ->  List[Dict[str, Any]]:
+    def parse_output(output: str) -> list[SlideResult]:
         """
         Parses the strict VLM output structure (Gemma 4 or Gemini) into clean, 
         easy-to-use Python data.
@@ -142,61 +156,78 @@ class ImageProcessor:
                 ...
             ]
         """
-        slides: List[Dict[str, Any]] = []
+    
+        slides: list[SlideResult] = []
         
-        # Split by slide headers (captures the number)
-        slide_blocks = re.split(r'### SLIDE_(\d+) ###', output.strip()) # ['', '1', 'content', '2', 'content']
+        slide_blocks = re.split(
+            r'### SLIDE_(\d+) ###',
+            output.strip()
+        )
 
         for i in range(1, len(slide_blocks), 2):
             slide_num = int(slide_blocks[i])
             content = slide_blocks[i + 1]
-            
-            # Separate TEXT and VISUALS
             if "## VISUALS ##" in content:
-                text_part, visuals_part = content.split("## VISUALS ##", 1)
+                text_part, visuals_part = content.split(
+                    "## VISUALS ##",
+                    1
+                )
+
             else:
                 text_part = content
                 visuals_part = ""
-            
+
             text = text_part.replace("## TEXT ##", "").strip()
-            
-            # Parse every visual block
-            visuals: List[Dict[str, Any]] = []
-            # Regex finds COORD + DESC pairs reliably
-            pattern = r'COORD:\s*(\[.*?\])\s*DESC:\s*(.*?)(?=\s*#|\Z)'
-            matches = re.findall(pattern, visuals_part, re.DOTALL | re.MULTILINE)
-            
+            visuals: list[Visual] = []
+
+            pattern = (
+                r'COORD:\s*(\[.*?\])'
+                r'\s*DESC:\s*(.*?)(?=\s*#|\Z)'
+            )
+
+            matches = re.findall(
+                pattern,
+                visuals_part,
+                re.DOTALL | re.MULTILINE
+            )
+
             for coord_str, desc in matches:
                 try:
                     coord = ast.literal_eval(coord_str.strip())
-                    visuals.append({
-                        "coord": coord,
-                        "desc": desc.strip()
-                    })
-                except:
-                    continue  # skip any malformed line
-            
-            slides.append({
-                "slide_number": slide_num,
-                "text": text,
-                "visuals": visuals
-            })
-        
+                    visuals.append(
+                        Visual(
+                            coord=coord,
+                            desc=desc.strip()
+                        )
+                    )
+                except (ValueError, SyntaxError):
+                    continue
+
+            slides.append(
+                SlideResult(
+                    slide_number=slide_num,
+                    text=text,
+                    visuals=visuals
+                )
+            )
         return slides
 
     @staticmethod
-    def attach_metadata(slides: List[Dict[str, Any]], images: List["ImageInput"]) -> List[Dict[str, Any]]:
-        """
-        Zips parsed VLM output back to source image metadata by position.
-        Assumes slides[i] corresponds to images[i] (same order sent to the batch call).
-        """
+    def attach_metadata(
+        slides: list[SlideResult],
+        images: list[ImageInput]
+    ) -> list[SlideResult]:
+
         if len(slides) != len(images):
-            print(f"Warning: slide count ({len(slides)}) != image count ({len(images)}); "
-                f"metadata attachment may be misaligned.")
+            print(
+                f"Warning: slide count ({len(slides)}) != "
+                f"image count ({len(images)}); "
+                f"metadata attachment may be misaligned."
+            )
 
         for slide, item in zip(slides, images):
-            slide["image_path"] = item.path
-            slide["timestamp"] = item.timestamp
+            slide.image_path = item.path
+            slide.timestamp = item.timestamp
 
         return slides
 
