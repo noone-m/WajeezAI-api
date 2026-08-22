@@ -17,7 +17,7 @@ UPLOAD_DIR = "uploads"
 @app.post("/api/lectures/upload")
 async def upload_lecture(
     audio: UploadFile = File(...),
-    slides: list[UploadFile] = File(...),
+    slides: list[UploadFile] = File(default=[]),
     timestamps: UploadFile = File(...),
 ):
     # Create a unique directory for this lecture

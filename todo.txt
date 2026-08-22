@@ -1,11 +1,13 @@
 * audio_postprocessing
 
+* ocr + (visual desc) postprocessing like enricher for query search and better embedding for example 
+for example:
+    النص  المستخرج  من  : TOKEN RING STATION STATION STATION STATION DIRECTION OF FLOW prepared by Dr. Imad M. Damascus university 2025/2026
+رسومات  التوضيحية  المرتبطة  بالصورة:
+شرح  توضيحي: مخطط  يوضح  طوبولوجيا  الحلقة (Ring Topology) وبالتحديد  تقنية (Token Ring)  حيث  تتصل  أربعة  محطات (Stations) في  شكل  حلقة  مغلقة،  مع  وجود  أسهم  زرقاء  توضح  اتجاه  تدفق  البيانات (Direction of Flow).
+the text needs to be enriched before embedding as  this text will play the role of query
+
 * if image uploaded from pc -> beta = 0 we only care for semantic similarity
-
-* images -> text
-
-
-* upload_endpoint
 
 * process endpoint
 /lectures
@@ -18,3 +20,5 @@ payload
 get lecutres/{id} -> stored word document
 
 get lecutures -> list of lectures
+
+* we can compare parsed output with or without timestamp later

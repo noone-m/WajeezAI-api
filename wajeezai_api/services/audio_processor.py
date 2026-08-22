@@ -8,14 +8,15 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 print(f'device is {device}')
 
-asr_pipeline = pipeline(
-    "automatic-speech-recognition",
-    model=str(MODEL_PATH),
-    device=0 if device == "cuda" else -1,
-    chunk_length_s=30,       # internal chunking window
-    stride_length_s=5,       # overlap between chunks, reduces boundary cut-offs
-    return_timestamps=True,
-)
+# asr_pipeline = pipeline(
+#     "automatic-speech-recognition",
+#     model=str(MODEL_PATH),
+#     device=0 if device == "cuda" else -1,
+#     chunk_length_s=30,       # internal chunking window
+#     stride_length_s=5,       # overlap between chunks, reduces boundary cut-offs
+#     return_timestamps=True,
+# )
+asr_pipeline = None
 
 @dataclass
 class TranscriptionSegment:
@@ -32,7 +33,7 @@ class TranscriptionResult:
 
 class AudioProcessor:
     @staticmethod
-    def transcribe_long_audio_whisper_native(audio_path=None, pipeline_obj=asr_pipeline):
+    def transcribe_long_audio_whisper_native(audio_path=None, pipeline_obj=asr_pipeline) -> TranscriptionResult:
         """
         Long-form Whisper transcription with segment timestamps, via the
         pipeline API (handles chunking + stitching internally — avoids the
@@ -50,7 +51,10 @@ class AudioProcessor:
             })
 
         full_transcription = result["text"].strip()
-        return full_transcription, segments
+        return TranscriptionResult(
+            full_transcription=full_transcription,
+            segments=segments,
+        )
 
 ######## example_returned 
 # full_transcription
