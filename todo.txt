@@ -19,4 +19,3 @@ payload
 get lecutres/{id} -> stored word document
 
 get lecutures -> list of lectures
-

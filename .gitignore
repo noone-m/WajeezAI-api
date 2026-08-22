@@ -1,2 +1,5 @@
 .venv
 .env
+whisper-model-large
+__pycache__/
+uploads/

@@ -1,37 +1,46 @@
-import librosa
+from pathlib import Path
+from transformers import pipeline
+import torch
+
+MODEL_PATH = 'whisper-model-large'
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+print(f'device is {device}')
+
+asr_pipeline = pipeline(
+    "automatic-speech-recognition",
+    model=str(MODEL_PATH),
+    device=0 if device == "cuda" else -1,
+    chunk_length_s=30,       # internal chunking window
+    stride_length_s=5,       # overlap between chunks, reduces boundary cut-offs
+    return_timestamps=True,
+)
+
 
 class AudioProcessor:
-
     @staticmethod
-    def transcribe_long_audio_whisper_native(model, processor, audio_path, device="cuda"):
+    def transcribe_long_audio_whisper_native(audio_path=None, pipeline_obj=asr_pipeline):
         """
-        Uses Whisper's built-in long-form generation + timestamps.
-        No manual chunking needed — returns segments with (start, end, text) directly usable in fusion.
+        Long-form Whisper transcription with segment timestamps, via the
+        pipeline API (handles chunking + stitching internally — avoids the
+        raw generate()/batch_decode() nested-output bug for audio >30s).
         """
-
-        audio, sr = librosa.load(audio_path, sr=16000)
-
-        inputs = processor(audio, sampling_rate=16000, return_tensors="pt")
-        input_features = inputs.input_features.to(device)
-
-        predicted_ids = model.generate(
-            input_features,
-            return_timestamps=True,
-            language="ar",
-            task="transcribe",
-        )
-
-        result = processor.batch_decode(
-            predicted_ids, skip_special_tokens=True, output_offsets=True
-        )
+        result = pipeline_obj(audio_path)
 
         segments = []
-        for offset in result[0]["offsets"]:
+        for chunk in result["chunks"]:
+            start, end = chunk["timestamp"]
             segments.append({
-                "text": offset["text"].strip(),
-                "start": offset["timestamp"][0],
-                "end": offset["timestamp"][1],
+                "text": chunk["text"].strip(),
+                "start": start,
+                "end": end,
             })
 
-        full_transcription = " ".join(s["text"] for s in segments)
+        full_transcription = result["text"].strip()
         return full_transcription, segments
+
+######## example_returned 
+# full_transcription
+# تمام واضح شو دور الترمينيتر هاي الترمينيتر طيب هلأ انا بدي اروح على الشكل الآتي بالرينك تبقى لو اجي لاحظ شايفين هلأ هذا الشكل الموجود معي انا هون هلأ انا بدي اشيل هذا الترمينيتر مع هذا الترمينيتر وبدي اربطه لهذا بدي اربطه نهاية هذا مع البداية هذا ما
+# segments
+# [{'text': 'تمام واضح شو دور الترمينيتر هاي الترمينيتر طيب هلأ انا بدي اروح على الشكل الآتي بالرينك تبقى لو اجي لاحظ شايفين هلأ هذا الشكل الموجود معي انا هون هلأ انا بدي اشيل هذا الترمينيتر مع هذا الترمينيتر وبدي اربطه لهذا بدي اربطه نهاية هذا مع البداية هذا ما', 'start': 0.0, 'end': 20.0}]
