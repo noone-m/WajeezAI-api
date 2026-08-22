@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 from transformers import pipeline
 import torch
@@ -16,6 +17,18 @@ asr_pipeline = pipeline(
     return_timestamps=True,
 )
 
+@dataclass
+class TranscriptionSegment:
+    text: str
+    start: float
+    end: float
+
+
+@dataclass
+class TranscriptionResult:
+    full_transcription: str
+    segments: list[TranscriptionSegment]
+    
 
 class AudioProcessor:
     @staticmethod
