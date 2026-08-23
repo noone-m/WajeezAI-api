@@ -291,6 +291,36 @@ class ImageProcessor:
 
         return img
 
+    @staticmethod
+    def process_images_in_batches(
+        images: list["ImageInput"],
+        subject: str = "Unknown unfortunately",
+        lecture_title: str = "Unknown unfortunately",
+        batch_size: int = 1,
+    ) -> list[SlideResult]:
+        """
+        Splits images into batches of `batch_size`, calls the VLM once per
+        batch, and concatenates parsed results in original image order.
+        Keeps attach_metadata's positional zip valid since slide count
+        still matches image count 1:1 across the full run.
+        """
+        all_slides: list[SlideResult] = []
 
-    ###############################    
-    
+        for batch_start in range(0, len(images), batch_size):
+            batch = images[batch_start : batch_start + batch_size]
+
+            raw_output = ImageProcessor.run_gemma_batch_google_api(
+                batch, subject=subject, lecture_title=lecture_title
+            )
+            batch_slides = ImageProcessor.parse_output(raw_output)
+
+            if len(batch_slides) != len(batch):
+                print(
+                    f"Warning: batch starting at index {batch_start} returned "
+                    f"{len(batch_slides)} slides for {len(batch)} images — "
+                    f"possible parsing drift, check raw_output."
+                )
+
+            all_slides.extend(batch_slides)
+
+        return all_slides

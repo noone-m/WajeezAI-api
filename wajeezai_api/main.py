@@ -20,11 +20,9 @@ async def upload_lecture(
     slides: list[UploadFile] = File(default=[]),
     timestamps: UploadFile = File(...),
 ):
-    # Create a unique directory for this lecture
-    lecture_dir = os.path.join(
-        UPLOAD_DIR,
-        "lecture_" + str(int(time.time()))
-    )
+    
+    lecture_id = "lecture_" + str(int(time.time()))
+    lecture_dir = os.path.join(UPLOAD_DIR, lecture_id)
     os.makedirs(lecture_dir, exist_ok=True)
 
     # Save audio
@@ -71,5 +69,17 @@ async def upload_lecture(
 
     return {
         "status": "ok",
+        "lecture_id": lecture_id,
         "slides": len(timestamps_data),
     }
+
+@app.post("/api/lectures/{lecture_id}/process")
+async def process_lecture(lecture_id: str):
+    lecture_dir = os.path.join(UPLOAD_DIR, lecture_id)
+    if not os.path.isdir(lecture_dir):
+        raise HTTPException(404, "Lecture not found")
+
+    # run your pipeline here: AudioProcessor -> ImageProcessor -> Alignment.align
+    # save result as lecture_dir/result.json
+
+    return {"status": "processing_complete", "lecture_id": lecture_id}
