@@ -72,7 +72,7 @@ class ImageProcessor:
     def load_image_input(path: str, timestamp: float | None = None, apply_grey: bool = False) -> ImageInput:
         img = ImageProcessor.preprocess_image(path, apply_grey=apply_grey)
         return ImageInput(image=img, path=path, timestamp=timestamp)
-    
+
     @staticmethod
     def run_gemma_batch_google_api(
         images: list["ImageInput"],
@@ -103,18 +103,19 @@ class ImageProcessor:
             contents = [*(item.image for item in images), prompt]
 
             response = client.models.generate_content(
-                model="gemma-4-31b-it",  # Specific Gemma 4 31B model endpoint
+                model="gemini-3.5-flash",  # thinking-capable Gemini model
                 contents=contents,
                 config=types.GenerateContentConfig(
                     temperature=0.0,
                     response_mime_type='text/plain',
                     thinking_config=types.ThinkingConfig(
                         include_thoughts=False,
-                        thinking_level='MINIMAL',)
+                        thinking_budget=4096,  # raise/lower as needed
+                    )
                 )
             )
             print('response', response)
-            
+
             return response.text.strip()
 
         except Exception as e:
@@ -296,7 +297,7 @@ class ImageProcessor:
         images: list["ImageInput"],
         subject: str = "Unknown unfortunately",
         lecture_title: str = "Unknown unfortunately",
-        batch_size: int = 1,
+        batch_size: int = 3,
     ) -> list[SlideResult]:
         """
         Splits images into batches of `batch_size`, calls the VLM once per
