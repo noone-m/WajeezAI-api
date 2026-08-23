@@ -38,7 +38,68 @@ class SlideFusion:
     slide_number: int
     texts: list[TextFusion]
     visuals: list[VisualFusion]
-    
+
+
+from dataclasses import field
+
+@dataclass
+class AlignmentTextOutput:
+    ocr_chunk: str
+    asr_chunks: list[str] = field(default_factory=list)
+
+
+@dataclass
+class AlignmentVisualOutput:
+    path: str
+    ocr_chunk: str
+    asr_chunks: list[str] = field(default_factory=list)
+
+
+@dataclass
+class AlignmentSlideOutput:
+    slide_number: int
+    texts: list[AlignmentTextOutput] = field(default_factory=list)
+    visuals: list[AlignmentVisualOutput] = field(default_factory=list)
+
+@dataclass
+class AlignmentOutput:
+    slides: list[AlignmentSlideOutput] = field(default_factory=list)
+
+    @classmethod
+    def from_result(cls, result: list[SlideFusion]) -> "AlignmentOutput":
+        slides = []
+
+        for slide in result:
+            slide_output = AlignmentSlideOutput(
+                slide_number=slide.slide_number
+            )
+
+            for text in slide.texts:
+                slide_output.texts.append(
+                    AlignmentTextOutput(
+                        ocr_chunk=text.ocr_chunk,
+                        asr_chunks=[
+                            chunk.text
+                            for chunk in text.asr_chunks
+                        ],
+                    )
+                )
+
+            for visual in slide.visuals:
+                slide_output.visuals.append(
+                    AlignmentVisualOutput(
+                        path=visual.path,
+                        ocr_chunk=visual.desc["ocr_chunk"],
+                        asr_chunks=[
+                            chunk.text
+                            for chunk in visual.desc["asr_chunks"]
+                        ],
+                    )
+                )
+
+            slides.append(slide_output)
+
+        return cls(slides=slides)  
     
 class Alignment:
     @staticmethod
@@ -68,8 +129,8 @@ class Alignment:
 
         return slides_list
         
-    alpha: float = 0.7,
-    beta: float = 0.3
+    alpha: float = 0.5,
+    beta: float = 0.5
 
     
     # ============================================================

@@ -1,9 +1,10 @@
+import os
 import pickle
 from pathlib import Path
-from wajeezai_api.services.alignment import Alignment
+from wajeezai_api.services.alignment import Alignment, AlignmentOutput, SlideFusion
 from wajeezai_api.services.audio_processor import TranscriptionResult, TranscriptionSegment
 from wajeezai_api.services.image_processor import SlideResult
-
+from wajeezai_api.services.synthesizer import Syntesizer
 cache_dir = Path(
     r"E:\Projects\WajeezAI\Test_Samples\sample_1\cache"
 )
@@ -30,7 +31,18 @@ transcription_result.segments = segments
 alignment_result = Alignment.align(
     slides=parsed_output_with_meta_with_timestamp,
     transcription=transcription_result,
-    text_threshold=0.30,
-    visual_threshold=0.30
+    text_threshold=0.10,
+    visual_threshold=0.10
     )
-print(f"alignment_result: {alignment_result}")
+
+from google.genai import types, client
+
+client = client.Client(
+api_key=os.getenv("GEMINI_API_KEY")
+)
+
+
+
+alignment_output = AlignmentOutput.from_result(alignment_result)
+print(alignment_output)
+Syntesizer.create_word_doc(alignment_output,client,background_image_path=r'C:\Users\Mahdi\Desktop\photo_2026-08-23_09-43-05.jpg', cover_image_path=r"C:\Users\Mahdi\Downloads\Gemini_Generated_Image_367zf1367zf1367z.jpg")
